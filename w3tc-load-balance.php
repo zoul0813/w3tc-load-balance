@@ -48,7 +48,6 @@ class W3TC_LoadBalance {
 	}
 	
 	private function is_external($filepath) {
-		// TODO: shouldn't rely on SimplePie's parse_url
 		$urlParse = parse_url($filepath);
 		if(!is_null($urlParse) && array_key_exists('host', $urlParse)) {
 			$urlHost = strtolower($urlParse['host']);
