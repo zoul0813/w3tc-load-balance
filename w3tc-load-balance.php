@@ -33,8 +33,7 @@ class W3TC_LoadBalance {
 				if(!empty($this->w3tc_options) && array_key_exists('cdn.enabled',$this->w3tc_options) && $this->w3tc_options['cdn.enabled'])
 				{
 					// rewrite the URL for attachments in the admin
-					if(!defined('DOING_AJAX') || !DOING_AJAX) 
-						add_filter('upload_dir', array($this, 'upload_dir'));
+					add_filter('upload_dir', array($this, 'upload_dir'));
 					
 					// This filter downloads the image to our local temporary directory, prior to editing the image.
 					add_filter('load_image_to_edit_path', array($this, 'load_image_to_edit_path'));
@@ -49,6 +48,7 @@ class W3TC_LoadBalance {
 	}
 	
 	private function is_external($filepath) {
+		// TODO: shouldn't rely on SimplePie's parse_url
 		$urlParse = parse_url($filepath);
 		if(!is_null($urlParse) && array_key_exists('host', $urlParse)) {
 			$urlHost = strtolower($urlParse['host']);
@@ -64,9 +64,12 @@ class W3TC_LoadBalance {
 	}
 	
 	function debug($msg) {
-		$fh = fopen('/tmp/w3tclb-debug.log', 'a');
-		fwrite($fh, date("Y-m-d H:i:s") . "\t" . trim($msg) . "\n");
-		fclose($fh);
+		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
+			$ofn = defined('W3TCLB_DEBUG_LOG') ? W3TCLB_DEBUG_LOG : sys_get_temp_dir() . 'w3tclb-debug.log';
+			$fh = fopen($ofn, 'a');
+			fwrite($fh, date("Y-m-d H:i:s") . "\t" . trim($msg) . "\n");
+			fclose($fh);
+		}
 	}
 
 	function url_normalizer($url) {
@@ -78,13 +81,12 @@ class W3TC_LoadBalance {
 	
 	function upload_dir($data) {
 		$this->debug("upload_dir()");
-
-		$w3_cdn = new W3_Plugin_Cdn();
-		
 		$data['baseurl'] = 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com/wp-content/uploads';
 		
-		foreach($data as $k=>$v) {
-			$this->debug("-> \$data[$k] = $v");
+		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
+			foreach($data as $k=>$v) {
+				$this->debug("-> \$data[$k] = $v");
+			}
 		}
 		
 		return $data;
@@ -97,10 +99,12 @@ class W3TC_LoadBalance {
 			
 			$url = parse_url($filepath); // FIX: redundant... *sigh*
 			
-			// DEBUG
-			foreach($url as $k=>$v) {
-				$this->debug("-> \$url[$k] = $v");
+			if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
+				foreach($url as $k=>$v) {
+					$this->debug("-> \$url[$k] = $v");
+				}
 			}
+			
 			$downloadPath = '';
 			if(array_key_exists('path', $url)) {
 				$filename = basename($url['path']);
