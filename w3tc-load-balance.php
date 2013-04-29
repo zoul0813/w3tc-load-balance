@@ -18,14 +18,14 @@ class W3TC_LoadBalance {
 	var $w3tc_options;
 	var $tempdir = '/tmp/'; // TODO: needs override
 	function __construct() {
-		// since we are calling is_plugin_active() from a non admin area
 		add_action('admin_init', array($this, 'admin_init'));
 	}
 
 	function admin_init() {
-		// is w3tc activated?
+		// since we are calling is_plugin_active() from a non admin area
 		@include_once(ABSPATH.'wp-admin/includes/plugin.php');
 		if(function_exists('is_plugin_active')) {
+			// is w3tc activated?
 			if(is_plugin_active('w3-total-cache/w3-total-cache.php')) {
 				// load the w3tc config
 				if(is_null($this->w3tc_options)) $this->w3tc_options = @include W3TC_CONFIG_DIR . '/master.php';
