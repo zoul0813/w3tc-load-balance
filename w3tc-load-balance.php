@@ -37,6 +37,7 @@ class W3TC_LoadBalance {
 					
 					// This filter downloads the image to our local temporary directory, prior to editing the image.
 					add_filter('load_image_to_edit_path', array($this, 'load_image_to_edit_path'));
+					add_filter('get_attached_file', array($this, 'get_attached_file'), 2, 2);
 					
 					// TODO: intercept image save, and overwrite old image file so all references point to edit???
 					// when the image is rotated, flipped, cropped, etc a new file is created Image-e32423423432.png
@@ -66,8 +67,11 @@ class W3TC_LoadBalance {
 		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
 			$ofn = defined('W3TCLB_DEBUG_LOG') ? W3TCLB_DEBUG_LOG : sys_get_temp_dir() . 'w3tclb-debug.log';
 			$fh = fopen($ofn, 'a');
-			fwrite($fh, date("Y-m-d H:i:s") . "\t" . trim($msg) . "\n");
+			$msg = date("Y-m-d H:i:s") . "\t" . trim($msg);
+			fwrite($fh, $msg . "\n");
 			fclose($fh);
+			
+			trigger_error($msg, E_USER_NOTICE);
 		}
 	}
 
@@ -78,9 +82,30 @@ class W3TC_LoadBalance {
 		return str_replace('%3A', ':', join('/', $url));
 	}
 	
+	function get_attached_file($file, $attachment_id) {
+		$this->debug("get_attached_file($file, $attachment_id)");
+		$this->debug("-> \$file = $file");
+		$this->debug("-> \$attachment_id = $attachment_id");
+		
+		if(!file_exists($file)) {
+			$file = get_post_meta($attachment_id, '_wp_attached_file', true);
+			$this->debug("-> ATTACHED: $file");
+			$url = $this->get_base_url() . '/' .$file;
+			$this->debug("-> URL: $url");
+			$file = $this->load_image_to_edit_path($url);
+			$this->debug("-> LOCAL: $file");
+		}
+		
+		return $file;
+	}
+	
+	function get_base_url() {
+		return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com/wp-content/uploads';
+	}
+	
 	function upload_dir($data) {
 		$this->debug("upload_dir()");
-		$data['baseurl'] = 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com/wp-content/uploads';
+		$data['baseurl'] = $this->get_base_url();
 		
 		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
 			foreach($data as $k=>$v) {
