@@ -100,10 +100,20 @@ class W3TC_LoadBalance {
 	}
 	
 	function get_base_url() {
-		
-		$site_url = parse_url(get_bloginfo('url'));
-		$this->debug("get_base_url -> " . print_r($site_url, true));
-		return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';
+		function get_base_url() {
+
+			$site_url = parse_url(get_bloginfo('url'));
+			$this->debug("get_base_url -> " . print_r($site_url, true));
+			if(!isset($site_url['path'])) $site_url['path'] = "";
+			switch($this->w3tc_options['cdn.engine']) {
+				case 's3': {
+					return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+				} break;
+				case 'cf': {
+					return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+				}
+			}
+		}
 	}
 	
 	function upload_dir($data) {
