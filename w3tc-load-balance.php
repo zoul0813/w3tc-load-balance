@@ -19,6 +19,9 @@ class W3TC_LoadBalance {
 	var $tempdir = '/tmp/'; // TODO: needs override
 	function __construct() {
 		add_action('admin_init', array($this, 'admin_init'));
+		if(defined('WP_CLI') && WP_CLI) {
+			$this->admin_init();
+		}
 	}
 
 	function admin_init() {
