@@ -41,7 +41,10 @@ class W3TC_LoadBalance {
 					// This filter downloads the image to our local temporary directory, prior to editing the image.
 					add_filter('load_image_to_edit_path', array($this, 'load_image_to_edit_path'));
 
-					if (defined('DOING_AJAX') && DOING_AJAX && 'image-editor' == (empty($_POST['action']) ? '' : $_POST['action'])) {
+					$is_ajax = defined('DOING_AJAX') && DOING_AJAX;
+					$action = (empty($_POST['action']) ? '' : $_POST['action']);
+
+					if ($is_ajax && in_array($action, array('image-editor', 'imgedit-preview'))) {
 						add_filter('get_attached_file', array($this, 'get_attached_file'), 2, 2);
 					}
 
