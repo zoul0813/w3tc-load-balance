@@ -40,7 +40,12 @@ class W3TC_LoadBalance {
 					
 					// This filter downloads the image to our local temporary directory, prior to editing the image.
 					add_filter('load_image_to_edit_path', array($this, 'load_image_to_edit_path'));
-					add_filter('get_attached_file', array($this, 'get_attached_file'), 2, 2);
+
+					if (defined('DOING_AJAX') && DOING_AJAX && 'image-editor' == (empty($_POST['action']) ? '' : $_POST['action'])) {
+						add_filter('get_attached_file', array($this, 'get_attached_file'), 2, 2);
+					}
+
+					//add_filter('wp_prepare_attachment_for_js', array($this, 'wp_prepare_attachment_for_js'), 3, 3);
 					
 					// TODO: intercept image save, and overwrite old image file so all references point to edit???
 					// when the image is rotated, flipped, cropped, etc a new file is created Image-e32423423432.png
