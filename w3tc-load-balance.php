@@ -19,6 +19,7 @@ class W3TC_LoadBalance {
 	var $tempdir = '/tmp/'; // TODO: needs override
 	function __construct() {
 		add_action('admin_init', array($this, 'admin_init'));
+		$tempdir = trailingslashit(WP_CONTENT_DIR);
 		if(defined('WP_CLI') && WP_CLI) {
 			$this->admin_init();
 		}
@@ -74,15 +75,18 @@ class W3TC_LoadBalance {
 		}
 	}
 	
-	function debug($msg) {
+	function debug($msg, $critcal = false) {
 		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
 			$ofn = defined('W3TCLB_DEBUG_LOG') ? W3TCLB_DEBUG_LOG : sys_get_temp_dir() . 'w3tclb-debug.log';
-			$fh = fopen($ofn, 'a');
-			$msg = date("Y-m-d H:i:s") . "\t" . trim($msg);
-			fwrite($fh, $msg . "\n");
-			fclose($fh);
-			
-			trigger_error($msg, E_USER_NOTICE);
+			if(is_writable($ofn) || is_writable(basedir($ofn))) {
+				$fh = fopen($ofn, 'a');
+				$msg = date("Y-m-d H:i:s") . "\t" . trim($msg);
+				fwrite($fh, $msg . "\n");
+				fclose($fh);
+			}
+			if($critical || (defined('W3TCLB_DEBUG_ERROR') && W3TCLB_DEBUG_ERROR)) {
+				trigger_error($msg, E_USER_NOTICE);
+			}
 		}
 	}
 
@@ -111,30 +115,58 @@ class W3TC_LoadBalance {
 	}
 	
 	function get_base_url() {
-
-		$site_url = parse_url(get_bloginfo('url'));
-		$this->debug("get_base_url -> " . print_r($site_url, true));
-		if(!isset($site_url['path'])) $site_url['path'] = "";
-		switch($this->w3tc_options['cdn.engine']) {
-			case 's3': {
-				return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
-			} break;
-			case 'cf': {
-				return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+		$site_url = get_bloginfo('url');
+		$this->debug('get_base_url -> site_url -> ' . serialize($site_url));
+		$base = $site_url;
+		if(!empty($this->w3tc_options['cdn.engine'])) {
+			switch($this->w3tc_options['cdn.engine']) {
+				case 's3': {
+					//return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+					if(!empty($this->w3tc_options['cdn.s3.cname'])) {
+						if(is_array($this->w3tc_options['cdn.s3.cname']) && count($this->w3tc_options['cdn.s3.cname']) > 0) {
+							$base = $this->w3tc_options['cdn.s3.cname'][0];
+						} else {
+							$base = $this->w3tc_options['cdn.s3.cname'];
+						}
+					} elseif(!empty($this->w3tc_options['cdn.s3.bucket'])) {
+						$base = $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com';
+					}
+				} break;
+				case 'cf': {
+					//return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+					if(!empty($this->w3tc_options['cdn.s3.cname'])) {
+						if(is_array($this->w3tc_options['cdn.s3.cname']) && count($this->w3tc_options['cdn.s3.cname']) > 0) {
+							$base = $this->w3tc_options['cdn.cf.cname'][0];
+						} else {
+							$base = $this->w3tc_options['cdn.cf.cname'];
+						}
+					} elseif(!empty($this->w3tc_options['cdn.cf.bucket'])) {
+						if(is_array($this->w3tc_options['cdn.cf.bucket']) && count($this->w3tc_options['cdn.cf.bucket']) > 0) {
+							$base = $this->w3tc_options['cdn.s3.bucket'][0] . '.s3.amazonaws.com';
+						} else {
+							$base = $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com';
+						}
+					}
+				} break;
 			}
 		}
+
+		if(substr($base, 0, 7) !== 'http://') {
+			$base = 'http://' . $base;
+		}
+		$upload_dir = WP_CONTENT_URL . '/uploads';
+		$this->debug('get_base_url -> upload_dir -> ' . serialize($upload_dir));
+		$upload_dir = str_replace($site_url, '', $upload_dir);
+		$this->debug('get_base_url -> upload_dir -> ' . serialize($upload_dir));
+
+		$url = join(DIRECTORY_SEPARATOR, array(rtrim($base, '/'), ltrim($upload_dir, '/')));
+		$this->debug('get_base_url -> url -> ' . serialize($url));
+		return $url;
 	}
 	
 	function upload_dir($data) {
 		$this->debug("upload_dir()");
 		$data['baseurl'] = $this->get_base_url();
-		
-		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
-			foreach($data as $k=>$v) {
-				$this->debug("-> \$data[$k] = $v");
-			}
-		}
-		
 		return $data;
 	}
 	
