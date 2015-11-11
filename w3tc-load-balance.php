@@ -154,7 +154,7 @@ class W3TC_LoadBalance {
 		if(substr($base, 0, 7) !== 'http://') {
 			$base = 'http://' . $base;
 		}
-		$upload_dir = WP_CONTENT_URL . '/uploads';
+		$upload_dir = UPLOADS;
 		$this->debug('get_base_url -> upload_dir -> ' . serialize($upload_dir));
 		$upload_dir = str_replace($site_url, '', $upload_dir);
 		$this->debug('get_base_url -> upload_dir -> ' . serialize($upload_dir));
