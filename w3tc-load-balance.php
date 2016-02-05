@@ -134,18 +134,14 @@ class W3TC_LoadBalance {
 				} break;
 				case 'cf': {
 					//return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
-					if(!empty($this->w3tc_options['cdn.s3.cname'])) {
-						if(is_array($this->w3tc_options['cdn.s3.cname']) && count($this->w3tc_options['cdn.s3.cname']) > 0) {
+					if(!empty($this->w3tc_options['cdn.cf.cname'])) {
+						if(is_array($this->w3tc_options['cdn.cf.cname']) && count($this->w3tc_options['cdn.cf.cname']) > 0) {
 							$base = $this->w3tc_options['cdn.cf.cname'][0];
 						} else {
 							$base = $this->w3tc_options['cdn.cf.cname'];
 						}
-					} elseif(!empty($this->w3tc_options['cdn.cf.bucket'])) {
-						if(is_array($this->w3tc_options['cdn.cf.bucket']) && count($this->w3tc_options['cdn.cf.bucket']) > 0) {
-							$base = $this->w3tc_options['cdn.s3.bucket'][0] . '.s3.amazonaws.com';
-						} else {
-							$base = $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com';
-						}
+					} elseif(!empty($this->w3tc_options['cdn.cf.id'])) {
+						$base = $this->w3tc_options['cdn.cf.id'] . '.cloudfront.net';
 					}
 				} break;
 			}
