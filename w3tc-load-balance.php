@@ -38,7 +38,7 @@ class W3TC_LoadBalance {
 				{
 					// rewrite the URL for attachments in the admin
 					add_filter('upload_dir', array($this, 'upload_dir'));
-					
+
 					// This filter downloads the image to our local temporary directory, prior to editing the image.
 					add_filter('load_image_to_edit_path', array($this, 'load_image_to_edit_path'));
 
@@ -50,16 +50,16 @@ class W3TC_LoadBalance {
 					}
 
 					//add_filter('wp_prepare_attachment_for_js', array($this, 'wp_prepare_attachment_for_js'), 3, 3);
-					
+
 					// TODO: intercept image save, and overwrite old image file so all references point to edit???
 					// when the image is rotated, flipped, cropped, etc a new file is created Image-e32423423432.png
 					// this means all existing references to Image.png are unaffected, only new references to it will
 					// use the changes you applied -- wtf much???
 				}
 			}
-		}	
+		}
 	}
-	
+
 	private function is_external($filepath) {
 		$urlParse = parse_url($filepath);
 		if(!is_null($urlParse) && array_key_exists('host', $urlParse)) {
@@ -68,17 +68,17 @@ class W3TC_LoadBalance {
 			if($urlHost != '') {
 				$this->debug("is_external($filepath) == true");
 				return true;
-			} 
+			}
 		} else {
 			$this->debug("is_external($filepath) == false");
 			return false;
 		}
 	}
-	
-	function debug($msg, $critcal = false) {
+
+	function debug($msg, $critical = false) {
 		if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
 			$ofn = defined('W3TCLB_DEBUG_LOG') ? W3TCLB_DEBUG_LOG : sys_get_temp_dir() . 'w3tclb-debug.log';
-			if(is_writable($ofn) || is_writable(basedir($ofn))) {
+			if(is_writable($ofn) || is_writable(dirname($ofn))) {
 				$fh = fopen($ofn, 'a');
 				$msg = date("Y-m-d H:i:s") . "\t" . trim($msg);
 				fwrite($fh, $msg . "\n");
@@ -96,12 +96,12 @@ class W3TC_LoadBalance {
 		foreach ($url as $key => $val) $url[$key] = urlencode($val);
 		return str_replace('%3A', ':', join('/', $url));
 	}
-	
+
 	function get_attached_file($file, $attachment_id) {
 		$this->debug("get_attached_file($file, $attachment_id)");
 		$this->debug("-> \$file = $file");
 		$this->debug("-> \$attachment_id = $attachment_id");
-		
+
 		if(!file_exists($file)) {
 			$file = get_post_meta($attachment_id, '_wp_attached_file', true);
 			$this->debug("-> ATTACHED: $file");
@@ -110,10 +110,10 @@ class W3TC_LoadBalance {
 			$file = $this->load_image_to_edit_path($url);
 			$this->debug("-> LOCAL: $file");
 		}
-		
+
 		return $file;
 	}
-	
+
 	function get_base_url() {
 		$site_url = get_bloginfo('url');
 		$this->debug('get_base_url -> site_url -> ' . serialize($site_url));
@@ -121,7 +121,7 @@ class W3TC_LoadBalance {
 		if(!empty($this->w3tc_options['cdn.engine'])) {
 			switch($this->w3tc_options['cdn.engine']) {
 				case 's3': {
-					//return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+					//return 'http://' . $this->w3tc_options['cdn.s3.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';
 					if(!empty($this->w3tc_options['cdn.s3.cname'])) {
 						if(is_array($this->w3tc_options['cdn.s3.cname']) && count($this->w3tc_options['cdn.s3.cname']) > 0) {
 							$base = $this->w3tc_options['cdn.s3.cname'][0];
@@ -133,7 +133,7 @@ class W3TC_LoadBalance {
 					}
 				} break;
 				case 'cf': {
-					//return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';				
+					//return 'http://' . $this->w3tc_options['cdn.cf.bucket'] . '.s3.amazonaws.com' . $site_url['path'] . '/wp-content/uploads';
 					if(!empty($this->w3tc_options['cdn.cf.cname'])) {
 						if(is_array($this->w3tc_options['cdn.cf.cname']) && count($this->w3tc_options['cdn.cf.cname']) > 0) {
 							$base = $this->w3tc_options['cdn.cf.cname'][0];
@@ -162,35 +162,35 @@ class W3TC_LoadBalance {
 		$this->debug('get_base_url -> url -> ' . serialize($url));
 		return $url;
 	}
-	
+
 	function upload_dir($data) {
 		$this->debug("upload_dir()");
 		$data['baseurl'] = $this->get_base_url();
 		return $data;
 	}
-	
+
 	function load_image_to_edit_path($filepath) {
 		$this->debug("load_image_to_edit_path($filepath)");
-		
+
 		if($this->is_external($filepath)) {
-			
+
 			$url = parse_url($filepath); // FIX: redundant... *sigh*
-			
+
 			if(defined('W3TCLB_DEBUG') && W3TCLB_DEBUG) {
 				foreach($url as $k=>$v) {
 					$this->debug("-> \$url[$k] = $v");
 				}
 			}
-			
+
 			$downloadPath = '';
 			if(array_key_exists('path', $url)) {
 				$filename = basename($url['path']);
 				$path = dirname(ABSPATH . substr($url['path'], 1));
-				
+
 				$this->debug('-> basename: ' . $path);
 				$this->debug('-> filename: ' . $filename);
-				
-				if(!file_exists($path)) 
+
+				if(!file_exists($path))
 					mkdir($path, 0775, true);
 				$downloadPath = $path . '/' . $filename;
 			}
@@ -210,8 +210,8 @@ class W3TC_LoadBalance {
 
 			return $downloadPath;
 
-		} 
-		
+		}
+
 		return $filepath;
 	}
 }
