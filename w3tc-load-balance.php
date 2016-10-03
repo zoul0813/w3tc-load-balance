@@ -3,7 +3,7 @@
 Plugin Name: W3 Total Cache - Load Balance Extension
 Plugin URI: http://www.dphcoders.com/
 Description: Adds the ability to load balance a w3tc installation with CDN
-Version: 1.1
+Version: 1.1.1
 Author: David Higgins <higginsd@zoulcreations.com>
 Author URI: http://www.dphcoders.com
 License: GPL2
